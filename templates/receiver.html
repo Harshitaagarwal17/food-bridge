@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FoodBridge Receiver Dashboard — Browse available food, request donations, and track your requests.">
+    <title>Receiver Dashboard — FoodBridge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="brand-icon">🌉</span>
+            <a href="/" class="brand-text">Food<span class="brand-highlight">Bridge</span></a>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/donor" class="nav-link">Donor</a>
+            <a href="/receiver" class="nav-link active">Receiver</a>
+            <a href="/admin" class="nav-link">Admin</a>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">📦 Receiver Dashboard</h1>
+                <p class="page-subtitle">Browse available food donations, request items, and track your history</p>
+            </div>
+            <div class="donor-selector-wrap">
+                <select id="activeReceiver" class="select-input">
+                    <option value="">— Select Receiver —</option>
+                </select>
+                <button class="btn btn-outline btn-sm" onclick="openRecRegModal()">+ New Receiver</button>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast" id="toast"></div>
+
+        <!-- Receiver Registration Modal -->
+        <div class="modal-overlay" id="recRegModal">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2>Register as Receiver</h2>
+                    <button class="modal-close" onclick="closeRecRegModal()">&times;</button>
+                </div>
+                <form id="recRegForm" class="form-grid">
+                    <div class="form-group">
+                        <label>Contact Name *</label>
+                        <input type="text" id="recName" class="form-input" required placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label>Organization *</label>
+                        <input type="text" id="recOrg" class="form-input" required placeholder="NGO / Food Bank name">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        <input type="tel" id="recPhone" class="form-input" required placeholder="10-digit phone">
+                    </div>
+                    <div class="form-group">
+                        <label>Zone *</label>
+                        <select id="recZone" class="form-input" required>
+                            <option value="">Select Zone</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Address *</label>
+                        <textarea id="recAddress" class="form-input" required rows="2" placeholder="Full address"></textarea>
+                    </div>
+                    <div class="form-actions full-width">
+                        <button type="submit" class="btn btn-primary">Register Receiver</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Receiver Content -->
+        <div id="receiverContent" style="display:none;">
+            <!-- Tabs: Available Food / My Requests -->
+            <div class="main-tabs">
+                <button class="main-tab active" onclick="switchTab('available', this)">🍲 Available Food</button>
+                <button class="main-tab" onclick="switchTab('requests', this)">📋 My Requests</button>
+            </div>
+
+            <!-- AVAILABLE FOOD TAB -->
+            <div id="tabAvailable" class="tab-content active">
+                <!-- Filters -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>Filter by Zone</label>
+                        <select id="filterZone" class="form-input" onchange="loadAvailableFood()">
+                            <option value="">All Zones</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Filter by Category</label>
+                        <select id="filterCategory" class="form-input" onchange="loadAvailableFood()">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-outline btn-sm" onclick="loadAvailableFood()" style="margin-top: 24px;">🔄 Refresh</button>
+                    </div>
+                </div>
+
+                <!-- Food Grid -->
+                <div class="cards-grid" id="foodGrid">
+                    <div class="empty-state"><p>Loading available food...</p></div>
+                </div>
+            </div>
+
+            <!-- MY REQUESTS TAB -->
+            <div id="tabRequests" class="tab-content">
+                <div class="cards-grid" id="requestsGrid">
+                    <div class="empty-state"><p>Loading your requests...</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Placeholder when no receiver selected -->
+        <div id="noReceiverSelected" class="empty-state-full">
+            <div class="empty-icon">📦</div>
+            <h2>Welcome to FoodBridge Receiver Portal</h2>
+            <p>Select an existing receiver from the dropdown above, or register a new receiver to get started.</p>
+            <button class="btn btn-primary btn-lg" onclick="openRecRegModal()">Register as Receiver</button>
+        </div>
+    </main>
+
+    <script src="/static/js/script.js"></script>
+    <script>
+        // ── State ──
+        let currentReceiverId = null;
+
+        // ── Init ──
+        document.addEventListener('DOMContentLoaded', () => {
+            loadZonesForReceiver();
+            loadReceivers();
+            loadCategories();
+        });
+
+        async function loadZonesForReceiver() {
+            const zones = await apiFetch('/api/zones');
+            if (!zones.success) return;
+            ['recZone', 'filterZone'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const first = el.querySelector('option');
+                el.innerHTML = '';
+                if (first) el.appendChild(first);
+                zones.data.forEach(z => {
+                    const opt = document.createElement('option');
+                    opt.value = z.zone_id;
+                    opt.textContent = `${z.zone_name}, ${z.city}`;
+                    el.appendChild(opt);
+                });
+            });
+        }
+
+        async function loadCategories() {
+            const res = await apiFetch('/api/food_categories');
+            if (!res.success) return;
+            const sel = document.getElementById('filterCategory');
+            res.data.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                sel.appendChild(opt);
+            });
+        }
+
+        async function loadReceivers() {
+            const res = await apiFetch('/api/receivers');
+            if (!res.success) return;
+            const sel = document.getElementById('activeReceiver');
+            const saved = localStorage.getItem('fb_receiver_id');
+            sel.innerHTML = '<option value="">— Select Receiver —</option>';
+            res.data.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.receiver_id;
+                opt.textContent = `${r.receiver_name} — ${r.organization_name}`;
+                if (saved && r.receiver_id == saved) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            if (saved) { currentReceiverId = saved; activateReceiver(); }
+        }
+
+        document.getElementById('activeReceiver').addEventListener('change', function() {
+            currentReceiverId = this.value;
+            if (currentReceiverId) {
+                localStorage.setItem('fb_receiver_id', currentReceiverId);
+                activateReceiver();
+            } else {
+                document.getElementById('receiverContent').style.display = 'none';
+                document.getElementById('noReceiverSelected').style.display = 'flex';
+            }
+        });
+
+        function activateReceiver() {
+            document.getElementById('noReceiverSelected').style.display = 'none';
+            document.getElementById('receiverContent').style.display = 'block';
+            loadAvailableFood();
+            loadMyRequests();
+        }
+
+        // ── Tab switching ──
+        function switchTab(tab, btn) {
+            document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(tab === 'available' ? 'tabAvailable' : 'tabRequests').classList.add('active');
+            if (tab === 'requests') loadMyRequests();
+            else loadAvailableFood();
+        }
+
+        // ── Load Available Food ──
+        async function loadAvailableFood() {
+            const zone = document.getElementById('filterZone').value;
+            const cat = document.getElementById('filterCategory').value;
+            let url = '/api/available_food?';
+            if (zone) url += `zone_id=${zone}&`;
+            if (cat) url += `category=${encodeURIComponent(cat)}&`;
+
+            const res = await apiFetch(url);
+            if (!res.success) return;
+
+            const grid = document.getElementById('foodGrid');
+            if (res.data.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><p>No available food found for the selected filters.</p></div>';
+                return;
+            }
+
+            grid.innerHTML = res.data.map(f => {
+                const urgency = getUrgencyFromExpiry(f.expiry_date);
+                const countdown = getCountdown(f.expiry_date);
+                return `
+                <div class="donation-card food-available-card">
+                    <div class="card-header">
+                        <h3 class="card-title">${escapeHtml(f.food_name)}</h3>
+                        <span class="urgency-badge badge-${urgency.class}">${urgency.label}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-detail"><span class="detail-label">Donor</span><span>${escapeHtml(f.donor_name)}</span></div>
+                        <div class="card-detail"><span class="detail-label">Category</span><span>${escapeHtml(f.category)}</span></div>
+                        <div class="card-detail"><span class="detail-label">Quantity</span><span>${f.quantity} ${escapeHtml(f.unit)}</span></div>
+                        <div class="card-detail"><span class="detail-label">Zone</span><span>${escapeHtml(f.zone_name)}, ${escapeHtml(f.city)}</span></div>
+                        <div class="card-detail"><span class="detail-label">Expires In</span><span class="countdown" data-expiry="${f.expiry_date}">${countdown}</span></div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary btn-sm btn-request" onclick="requestFood(${f.food_id}, ${f.quantity})">
+                            📨 Request This Food
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ── Request Food ──
+        async function requestFood(foodId, maxQty) {
+            if (!currentReceiverId) { showToast('Please select a receiver first', 'error'); return; }
+            const qty = prompt(`Enter quantity to request (max ${maxQty}):`, maxQty);
+            if (!qty || isNaN(qty) || qty <= 0) return;
+            if (parseFloat(qty) > parseFloat(maxQty)) {
+                showToast('Quantity exceeds available amount', 'error');
+                return;
+            }
+
+            const res = await apiFetch('/api/request_food', 'POST', {
+                receiver_id: currentReceiverId,
+                food_id: foodId,
+                requested_quantity: parseFloat(qty),
+            });
+
+            if (res.success) {
+                showToast('Food requested successfully! 🎉', 'success');
+                loadAvailableFood();
+                loadMyRequests();
+            } else {
+                showToast(res.error || 'Request failed', 'error');
+            }
+        }
+
+        // ── Load My Requests ──
+        async function loadMyRequests() {
+            if (!currentReceiverId) return;
+            const res = await apiFetch(`/api/receiver/${currentReceiverId}/requests`);
+            if (!res.success) return;
+
+            const grid = document.getElementById('requestsGrid');
+            if (res.data.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><p>No requests yet. Browse available food and make a request!</p></div>';
+                return;
+            }
+
+            grid.innerHTML = res.data.map(r => {
+                const urgency = getUrgencyFromExpiry(r.expiry_date);
+                return `
+                <div class="donation-card request-card status-${r.request_status}">
+                    <div class="card-header">
+                        <h3 class="card-title">${escapeHtml(r.food_name)}</h3>
+                        <span class="status-pill sp-${r.request_status}">${r.request_status}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-detail"><span class="detail-label">Donor</span><span>${escapeHtml(r.donor_name)}</span></div>
+                        <div class="card-detail"><span class="detail-label">Category</span><span>${escapeHtml(r.category)}</span></div>
+                        <div class="card-detail"><span class="detail-label">Requested Qty</span><span>${r.requested_quantity} ${escapeHtml(r.unit)}</span></div>
+                        <div class="card-detail"><span class="detail-label">Zone</span><span>${escapeHtml(r.zone_name)}, ${escapeHtml(r.city)}</span></div>
+                        <div class="card-detail"><span class="detail-label">Requested At</span><span>${formatDate(r.request_time)}</span></div>
+                        ${r.fulfilled_time ? `<div class="card-detail"><span class="detail-label">Fulfilled At</span><span>${formatDate(r.fulfilled_time)}</span></div>` : ''}
+                        <div class="card-detail"><span class="detail-label">Freshness</span><span class="urgency-badge badge-${urgency.class}">${urgency.label}</span></div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ── Modals ──
+        function openRecRegModal() { document.getElementById('recRegModal').classList.add('active'); }
+        function closeRecRegModal() { document.getElementById('recRegModal').classList.remove('active'); }
+
+        // ── Register Receiver ──
+        document.getElementById('recRegForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await apiFetch('/api/add_receiver', 'POST', {
+                receiver_name: document.getElementById('recName').value,
+                organization_name: document.getElementById('recOrg').value,
+                phone: document.getElementById('recPhone').value,
+                address: document.getElementById('recAddress').value,
+                zone_id: document.getElementById('recZone').value,
+            });
+            if (res.success) {
+                showToast('Receiver registered successfully!', 'success');
+                closeRecRegModal();
+                localStorage.setItem('fb_receiver_id', res.receiver_id);
+                currentReceiverId = res.receiver_id;
+                await loadReceivers();
+                document.getElementById('activeReceiver').value = res.receiver_id;
+                activateReceiver();
+                e.target.reset();
+            } else {
+                showToast(res.error || 'Registration failed', 'error');
+            }
+        });
+
+        // ── Live countdown ──
+        setInterval(() => {
+            document.querySelectorAll('.countdown').forEach(el => {
+                el.textContent = getCountdown(el.dataset.expiry);
+            });
+        }, 1000);
+
+        // ── Auto-refresh every 15s ──
+        setInterval(() => {
+            if (currentReceiverId) {
+                loadAvailableFood();
+                loadMyRequests();
+            }
+        }, 15000);
+    </script>
+</body>
+</html>

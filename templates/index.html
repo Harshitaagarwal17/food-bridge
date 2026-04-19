@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FoodBridge - Connecting food donors with those in need. A smart food distribution management system.">
+    <title>FoodBridge — Food Distribution Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="home-page">
+
+    <!-- Animated background particles -->
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-brand">
+            <span class="brand-icon">🌉</span>
+            <span class="brand-text">Food<span class="brand-highlight">Bridge</span></span>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link active">Home</a>
+            <a href="/donor" class="nav-link">Donor</a>
+            <a href="/receiver" class="nav-link">Receiver</a>
+            <a href="/admin" class="nav-link">Admin</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-content">
+            <div class="hero-badge">🍽️ Zero Waste Initiative</div>
+            <h1 class="hero-title">
+                Bridging the Gap Between
+                <span class="gradient-text">Surplus Food</span>
+                &amp; Those in Need
+            </h1>
+            <p class="hero-subtitle">
+                FoodBridge is a smart food redistribution platform that connects
+                generous donors with communities in need — ensuring fresh food
+                reaches the right people before it expires.
+            </p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="heroStat1">0</span>
+                    <span class="stat-label">Donors Active</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="heroStat2">0</span>
+                    <span class="stat-label">Food Delivered</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="heroStat3">0</span>
+                    <span class="stat-label">Zones Covered</span>
+                </div>
+            </div>
+            <div class="hero-actions">
+                <a href="/donor" class="btn btn-primary btn-lg" id="btnDonor">
+                    <span class="btn-icon">🤝</span>
+                    Donor Dashboard
+                </a>
+                <a href="/receiver" class="btn btn-secondary btn-lg" id="btnReceiver">
+                    <span class="btn-icon">📦</span>
+                    Receiver Dashboard
+                </a>
+                <a href="/admin" class="btn btn-outline btn-lg" id="btnAdmin">
+                    <span class="btn-icon">📊</span>
+                    Admin Panel
+                </a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="floating-card card-1">
+                <div class="fc-icon">🥘</div>
+                <div class="fc-text">Biryani • 25 plates</div>
+                <div class="fc-badge badge-fresh">Fresh</div>
+            </div>
+            <div class="floating-card card-2">
+                <div class="fc-icon">🍱</div>
+                <div class="fc-text">Meal Box • 40 units</div>
+                <div class="fc-badge badge-soon">2h left</div>
+            </div>
+            <div class="floating-card card-3">
+                <div class="fc-icon">🥗</div>
+                <div class="fc-text">Salad • 15 kg</div>
+                <div class="fc-badge badge-fresh">5h left</div>
+            </div>
+            <div class="floating-card card-4">
+                <div class="fc-icon">✅</div>
+                <div class="fc-text">Request Fulfilled!</div>
+                <div class="fc-badge badge-fulfilled">Done</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="how-it-works" id="howItWorks">
+        <h2 class="section-title">How <span class="gradient-text">FoodBridge</span> Works</h2>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">01</div>
+                <div class="step-icon">📝</div>
+                <h3>Donor Lists Food</h3>
+                <p>Restaurants, caterers, and individuals list surplus food with details like quantity, expiry time, and zone.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">02</div>
+                <div class="step-icon">🔍</div>
+                <h3>Receiver Browses</h3>
+                <p>NGOs and food banks browse available food filtered by zone and category, seeing real-time freshness levels.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">03</div>
+                <div class="step-icon">📨</div>
+                <h3>Request & Match</h3>
+                <p>Receivers request food items. The system updates status instantly and notifies both parties.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">04</div>
+                <div class="step-icon">🚚</div>
+                <h3>Deliver & Fulfill</h3>
+                <p>Food gets distributed. The dashboard tracks fulfillment, and expired items are auto-removed.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="brand-icon">🌉</span>
+                <span>Food<span class="brand-highlight">Bridge</span></span>
+            </div>
+            <p class="footer-text">DBMS Mini Project — Food Distribution Management System</p>
+            <p class="footer-tech">Built with Flask • MySQL • HTML/CSS/JS</p>
+        </div>
+    </footer>
+
+    <script>
+        // Animate hero stats
+        function animateCounter(el, target) {
+            let current = 0;
+            const step = Math.ceil(target / 40);
+            const timer = setInterval(() => {
+                current += step;
+                if (current >= target) { current = target; clearInterval(timer); }
+                el.textContent = current;
+            }, 40);
+        }
+
+        // Fetch live stats for hero
+        fetch('/api/dashboard_stats')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    animateCounter(document.getElementById('heroStat1'), data.data.total_donors);
+                    animateCounter(document.getElementById('heroStat2'), data.data.fulfilled_requests);
+                    animateCounter(document.getElementById('heroStat3'), 5);
+                }
+            })
+            .catch(() => {
+                animateCounter(document.getElementById('heroStat1'), 5);
+                animateCounter(document.getElementById('heroStat2'), 10);
+                animateCounter(document.getElementById('heroStat3'), 5);
+            });
+
+        // Create floating particles
+        const container = document.getElementById('bgParticles');
+        for (let i = 0; i < 30; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.top = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 6 + 's';
+            p.style.animationDuration = (4 + Math.random() * 6) + 's';
+            p.style.width = p.style.height = (3 + Math.random() * 5) + 'px';
+            container.appendChild(p);
+        }
+    </script>
+</body>
+</html>
