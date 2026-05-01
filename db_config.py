@@ -8,11 +8,11 @@ from dbutils.pooled_db import PooledDB
 
 # ── MySQL Connection Settings ──────────────────────────────
 DB_CONFIG = {
-    'host':     os.environ.get('MYSQLHOST', 'localhost'),
-    'port':     int(os.environ.get('MYSQLPORT', 3306)),
-    'user':     os.environ.get('MYSQLUSER', 'root'),
-    'password': os.environ.get('MYSQLPASSWORD', 'root'),
-    'database': os.environ.get('MYSQLDATABASE', 'foodbridge'),
+    'host':     os.environ.get('MYSQLHOST') or os.environ.get('MYSQL_HOST', 'localhost'),
+    'port':     int(os.environ.get('MYSQLPORT') or os.environ.get('MYSQL_PORT', 3306)),
+    'user':     os.environ.get('MYSQLUSER') or os.environ.get('MYSQL_USER', 'root'),
+    'password': os.environ.get('MYSQLPASSWORD') or os.environ.get('MYSQL_ROOT_PASSWORD', 'root'),
+    'database': os.environ.get('MYSQLDATABASE') or os.environ.get('MYSQL_DATABASE', 'foodbridge'),
     'charset':  'utf8mb4',
     'cursorclass': pymysql.cursors.DictCursor,
 }
@@ -21,7 +21,7 @@ DB_CONFIG = {
 pool = PooledDB(
     creator=pymysql,
     maxconnections=20,
-    mincached=2,
+    mincached=0,
     maxcached=5,
     blocking=True,
     **DB_CONFIG
