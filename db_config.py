@@ -2,18 +2,18 @@
 FoodBridge - Database Configuration & Connection Pooling
 Uses pymysql with DBUtils for connection pooling.
 """
-
+import os
 import pymysql
 from dbutils.pooled_db import PooledDB
 
 # ── MySQL Connection Settings ──────────────────────────────
 DB_CONFIG = {
-    'host':       'localhost',
-    'port':       3306,
-    'user':       'root',
-    'password':   'root',           # ← Put your MySQL root password here
-    'database':   'foodbridge',
-    'charset':    'utf8mb4',
+    'host':     os.environ.get('MYSQLHOST', 'localhost'),
+    'port':     int(os.environ.get('MYSQLPORT', 3306)),
+    'user':     os.environ.get('MYSQLUSER', 'root'),
+    'password': os.environ.get('MYSQLPASSWORD', 'root'),
+    'database': os.environ.get('MYSQLDATABASE', 'foodbridge'),
+    'charset':  'utf8mb4',
     'cursorclass': pymysql.cursors.DictCursor,
 }
 
@@ -26,7 +26,6 @@ pool = PooledDB(
     blocking=True,
     **DB_CONFIG
 )
-
 
 def get_connection():
     """Get a connection from the pool."""
